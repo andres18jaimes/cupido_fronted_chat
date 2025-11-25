@@ -9,6 +9,10 @@ import EditProfilePage from "./features/profile/components/EditProfilePage";
 import EditPreferencesPage from "./features/profile/components/EditPreferencesPage";
 import NotFound from "./pages/NotFound";
 
+// --- 2. ¡IMPORTA TU NUEVO COMPONENTE DE CHAT PRINCIPAL! ---
+// Importamos ChatGeneral en lugar de ChatRoom para cargar todo el layout (lista + chat)
+import ChatGeneral from './features/chat/ChatGeneral';
+
 
 const queryClient = new QueryClient();
 
@@ -23,6 +27,14 @@ const App = () => (
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/edit-profile" element={<EditProfilePage />} />
           <Route path="/edit-preferences" element={<EditPreferencesPage />} />
+          
+          {/* --- 3. ¡AÑADE TU RUTA DE PRUEBA AQUÍ! --- */}
+          {/* Ahora cargamos ChatGeneral en la ruta de prueba */}
+          <Route 
+            path="/test-chat" 
+            element={<ChatGeneral />} 
+          />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

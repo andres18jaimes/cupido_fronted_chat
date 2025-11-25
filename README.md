@@ -93,7 +93,29 @@ In the project directory, you can run:
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
+---
 
+## 💬 Módulo de Chat - Características Avanzadas
+
+### 🎯 Funcionalidades Implementadas
+- **Chat en Tiempo Real**: WebSockets integrados para mensajería instantánea
+- **Validación de Matches**: Solo usuarios con match activo pueden chatear
+- **Interfaz Dual Panel**: Lista de chats + vista de conversación
+- **Estados de Mensajes**: Enviado, entregado, leído (con iconos de corazones)
+- **Seguridad Avanzada**: 
+  - Filtro de toxicidad en mensajes
+  - Bloqueo de números telefónicos (primeros 3 días)
+  - Sistema de reportes y bloqueos
+  - Validación de usuarios activos/no suspendidos
+
+### 🏗️ Arquitectura del Chat
+src/features/chat/
+├── ChatGeneral.tsx      # Componente contenedor principal
+├── ChatListPanel.tsx    # Lista de conversaciones
+├── ChatView.tsx         # Vista de mensajes
+├── ChatRoom.tsx         # Sala de chat específica
+└── mock-chat-data.ts    # Datos de prueba
 ## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
