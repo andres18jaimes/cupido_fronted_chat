@@ -1,20 +1,43 @@
 import React, { useState } from 'react';
-import { MOCK_CHAT_LIST } from './mock-chat-data';
+import { useChatList, ChatListItemReal } from '../../hooks/useChatList';
+//import { MOCK_CHAT_LIST } from './mock-chat-data';
 
 interface ChatListPanelProps {
     onSelectChat: (chatId: number) => void;
     selectedChatId: number | null;
     onCloseChat: (chatId: number) => void;
+
+        // 🟢 NUEVAS PROPIEDADES RECIBIDAS DEL PADRE (ChatGeneral)
+    chatList: ChatListItemReal[];
+    listLoading: boolean;
+    listError: string | null;
 }
 
-const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedChatId, onCloseChat }) => {
+// Helper para formatear la fecha/hora
+const formatTime = (isoString: string | undefined): string => {
+    if (!isoString) return '';
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return '---';
+    }
+}
+
+const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedChatId, onCloseChat, chatList, listLoading, listError }) => {
+    // 🟢 REEMPLAZO CLAVE: Usar el hook para obtener datos reales
+    //const { chatList, loading, error } = useChatList();
+    
     const [searchTerm, setSearchTerm] = useState('');
     // 🟢 Nuevo estado: Almacena el ID del chat cuyo menú de opciones está abierto.
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
-    const filteredChats = MOCK_CHAT_LIST.filter(chat =>
-        chat.nombreContacto.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredChats = chatList.filter((chat: ChatListItemReal) =>
+        chat.contacto.nombres.toLowerCase().includes(searchTerm.toLowerCase()) // Filtrar por el nombre del contacto
     );
+    //const filteredChats = MOCK_CHAT_LIST.filter(chat =>
+    //    chat.nombreContacto.toLowerCase().includes(searchTerm.toLowerCase())
+    //);
 
     // 🟢 Función para manejar las acciones del menú
     const handleMenuAction = (action: string, chatId: number, chatName: string) => {
@@ -27,7 +50,9 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                 alert(`Bloqueando a ${chatName}...`);
                 break;
             case 'Reportar':
-                alert(`Reportando a ${chatName}...`);
+                // Placeholder: integración futura con módulo de reportes
+                console.log("[TODO] Abrir flujo de reporte para usuario:", chatName, "en chat", chatId);
+                alert(`Aquí debería abrirse la pantalla de reporte para ${chatName}`);
                 break;
             case 'Cerrar':
                 onCloseChat(chatId);
@@ -45,6 +70,34 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                 break;
         }
     };
+
+    // Función para la URL de la foto (simulación temporal)
+    const getContactPhotoUrl = (chat: ChatListItemReal) => {
+        // ⚠️ Nota: Reemplaza esto con la URL real que obtengas del backend.
+        return `https://randomuser.me/api/portraits/${
+            chat.contacto.id % 2 === 0 ? 'women' : 'men'
+        }/${chat.contacto.id}.jpg`;
+    };
+
+    // Navegar al perfil del contacto (placeholder, para que el equipo de perfil lo conecte luego)
+    const handleOpenProfile = (e: React.MouseEvent, chat: ChatListItemReal) => {
+        // Evita que al hacer clic en la foto también se seleccione el chat
+        e.stopPropagation();
+        // Aquí se podría usar useNavigate de react-router-dom, por ejemplo:
+        // navigate(`/perfil/${chat.contacto.id}`);
+        // Por ahora, dejamos un placeholder claro para el equipo de perfil.
+        console.log("[TODO] Ir al perfil del usuario con id:", chat.contacto.id);
+        alert(`Aquí debería ir al perfil de ${chat.contacto.nombres} ${chat.contacto.apellidos}`);
+    };
+
+    // 🟢 Renderizado condicional para carga y error
+    if (listLoading) {
+        return <div className="p-8 text-center text-pink-500">Cargando lista de chats...</div>;
+    }
+
+    if (listError) {
+        return <div className="p-8 text-center text-red-500">Error al cargar chats: {listError}</div>;
+    }    
 
     return (
         <div className="w-80 bg-pink-50 border-r border-gray-200 flex flex-col h-full">
@@ -76,18 +129,34 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                             setOpenMenuId(null); // Cierra cualquier menú abierto al seleccionar otro chat
                         }}
                     >
-                        {/* Foto de perfil */}
+                        {/* Foto de perfil (clickable para ir al perfil) */}
                         <img
-                            src={chat.fotoContacto}
-                            alt={chat.nombreContacto}
-                            className="w-12 h-12 rounded-full mr-3 object-cover"
+                            src={"https://randomuser.me/api/portraits/men/"+chat.contacto.id+".jpg"}
+                            alt={chat.contacto.nombres + ' ' + chat.contacto.apellidos}
+                            className="w-12 h-12 rounded-full mr-3 object-cover cursor-pointer hover:ring-2 hover:ring-pink-300 hover:ring-offset-1 transition"
+                            onClick={(e) => handleOpenProfile(e, chat)}
+                            title="Ver perfil"
                         />
                         <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center">
-                                <p className="font-semibold text-gray-800 truncate">{chat.nombreContacto}</p>
-                                <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{chat.horaUltimoMensaje}</span>
+                            <div className="flex justify-between items-start">
+                                <p className="font-semibold text-gray-800 truncate">
+                                    {chat.contacto.nombres} {chat.contacto.apellidos}
+                                </p>
+                                <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-2">
+                                    <span className="text-xs text-gray-500">
+                                        {formatTime(chat.ultimo_mensaje?.fechaHora)}
+                                    </span>
+                                    {/* 🟢 Notificaciones (Conteo de no leídos REAL) - Debajo de la hora */}
+                                    {chat.no_leidos > 0 && (
+                                        <span className="bg-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                            {chat.no_leidos}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                            <p className="text-sm text-gray-600 truncate">{chat.ultimoMensaje}</p>
+                            <p className="text-sm text-gray-600 truncate">
+                                {chat.ultimo_mensaje ? chat.ultimo_mensaje.contenido: "Inicia la conversación"}
+                            </p>
                         </div>
 
                         {/* 🎯 Menú de 3 puntos - Posición y diseño mejorado */}
@@ -109,7 +178,7 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                                 <div className="absolute right-0 top-10 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-30 py-2">
                                     {/* Header del menú */}
                                     <div className="px-4 py-2 border-b border-gray-100">
-                                        <p className="text-sm font-semibold text-gray-800 truncate">{chat.nombreContacto}</p>
+                                        <p className="text-sm font-semibold text-gray-800 truncate">{chat.contacto.nombres} {chat.contacto.apellidos}</p>
                                         <p className="text-xs text-gray-500">Opciones de chat</p>
                                     </div>
                                     
@@ -117,7 +186,7 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                                         className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-pink-50 transition-colors"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleMenuAction('Bloquear', chat.id, chat.nombreContacto);
+                                            handleMenuAction('Bloquear', chat.id, chat.contacto.nombres);
                                         }}
                                     >
                                         <svg className="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,7 +199,7 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                                         className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-pink-50 transition-colors"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleMenuAction('Reportar', chat.id, chat.nombreContacto);
+                                            handleMenuAction('Reportar', chat.id, chat.contacto.nombres);
                                         }}
                                     >
                                         <svg className="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,7 +212,7 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                                         className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-pink-50 transition-colors"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleMenuAction('Vaciar', chat.id, chat.nombreContacto);
+                                            handleMenuAction('Vaciar', chat.id, chat.contacto.nombres);
                                         }}
                                     >
                                         <svg className="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +227,7 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                                         className="flex items-center w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleMenuAction('Cerrar', chat.id, chat.nombreContacto);
+                                            handleMenuAction('Cerrar', chat.id, chat.contacto.nombres);
                                         }}
                                     >
                                         <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,13 +238,6 @@ const ChatListPanel: React.FC<ChatListPanelProps> = ({ onSelectChat, selectedCha
                                 </div>
                             )}
                         </div>
-
-                        {/* Notificaciones (el círculo rojo) */}
-                        {chat.notificaciones > 0 && (
-                            <span className="ml-2 bg-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                                {chat.notificaciones}
-                            </span>
-                        )}
                     </div>
                 ))}
                 {filteredChats.length === 0 && (
